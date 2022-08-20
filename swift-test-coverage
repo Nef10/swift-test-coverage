@@ -7,6 +7,8 @@ echo ""
 BIN="$(swift build --show-bin-path)"
 FILE="$(find "${BIN}" -name '*.xctest')"
 COV="$(dirname "$(which swift)")/llvm-cov"
+COMMAND="report"
+PIPE=false
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     FILE=""${FILE}"/Contents/MacOS/$(basename "$FILE" .xctest)"
@@ -25,4 +27,16 @@ if [ -t 1 ] || [ "${GITHUB_ACTIONS}" = true ]; then
     ARGS="${ARGS}--use-color "
 fi
 
-"$COV" report "${FILE}" -instr-profile="${BIN}/codecov/default.profdata" -ignore-filename-regex=".build|Tests" $ARGS
+if [[ "$1" == "show" ]]; then
+    COMMAND="show"
+elif [[ "$1" == "export" ]]; then
+    COMMAND="show"
+    ARGS="${ARGS}--format=html "
+    PIPE=true
+fi
+
+if [ "$PIPE" = true ] ; then
+    "$COV" "$COMMAND" "${FILE}" -instr-profile="${BIN}/codecov/default.profdata" -ignore-filename-regex=".build|Tests" $ARGS $2 > coverage.html
+else
+    "$COV" "$COMMAND" "${FILE}" -instr-profile="${BIN}/codecov/default.profdata" -ignore-filename-regex=".build|Tests" $ARGS $2
+fi
